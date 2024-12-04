@@ -1,101 +1,179 @@
-import Image from "next/image";
+// CRUD FESTAS, MAP PARA MOSTRAR AS FESTAS, NO HOME PARA MOSTRAR AS FESTAS
 
-export default function Home() {
+'use client';
+
+import { useEffect, useState } from "react";
+import Pessoa from "../components/Pessoa";
+
+interface Festa {
+  id: number;
+  nome: string;
+  data: Date;
+}
+
+const Home: React.FC = () => {
+  const [festas, setFestas] = useState<Festa[]>([]);
+  const [festaSelecionada, setFestaSelecionada] = useState<number | null>(null);
+  const [newFesta, setNewFesta] = useState<string>("");  // Para o nome da nova festa
+  const [editFestaId, setEditFestaId] = useState<number | null>(null);
+  const [editFestaNome, setEditFestaNome] = useState<string>("");
+
+  // FUNÇÕES DE CRUD - FESTAS
+
+  // Função para buscar as festas
+  useEffect(() => {
+    const fetchFestas = async () => {
+      const response = await fetch("http://localhost:3000/festas");
+      const data: Festa[] = await response.json();
+      setFestas(data);
+    };
+
+    fetchFestas();
+  }, [festas]);
+
+  // Função para criar uma nova festa
+  const handleAddFesta = async () => {
+    if (newFesta.trim() === "") return; // Verificar se o nome não está vazio
+
+    const response = await fetch("http://localhost:3000/festas", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ nome: newFesta, data: new Date() }),
+    });
+
+    if (response.ok) {
+      setNewFesta("");
+      setFestaSelecionada(null); 
+    } else {
+      alert("Erro ao adicionar festa!");
+    }
+  };
+
+  // Função para editar uma festa
+  const handleEditFesta = async () => {
+    if (editFestaNome.trim() === "") return;
+
+    const response = await fetch(`http://localhost:3000/festas/${editFestaId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ nome: editFestaNome, data: new Date() }), 
+    });
+
+    if (response.ok) {
+      setEditFestaId(null);
+      setEditFestaNome("");
+    } else {
+      alert("Erro ao editar festa!");
+    }
+  };
+
+  // Função para excluir uma festa
+  const handleDeleteFesta = async (id: number) => {
+    const response = await fetch(`http://localhost:3000/festas/${id}`, {
+      method: "DELETE",
+    });
+
+    if (response.ok) {
+      setFestaSelecionada(null);
+    } else {
+      alert("Erro ao excluir festa!");
+    }
+  };
+
+  const handleFestaClick = (id: number) => {
+    setFestaSelecionada(id);
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+    <div className="min-h-screen flex flex-col items-center justify-start bg-gray-100 pt-10"> {/* Ajustado para mais para cima */}
+      <h1 className="text-[60px] mb-8">Combinar festas!</h1> {/* Adicionando espaço abaixo do título */}
+      <div className="w-full max-w-5xl"> {/* Aumentando a largura do componente */}
+        {/* Menu de ações */}
+        <div className="flex justify-end space-x-4 bg-white p-3 rounded-md shadow-md ">
+          {/* Botões de Ação */}
+          <div>
+            <input
+              type="text"
+              value={newFesta}
+              onChange={(e) => setNewFesta(e.target.value)}
+              placeholder="Nome da nova festa"
+              className="border p-2 mx-2 rounded"
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            <button
+              onClick={handleAddFesta}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-opacity-75"
+            >
+              Adicionar Festa
+            </button>
+          </div>
+
+          {/* Botões para editar e excluir */}
+          {festaSelecionada && (
+            <div className="space-x-4">
+              <button
+                onClick={() => {
+                  setEditFestaId(festaSelecionada);
+                  const festa = festas.find(f => f.id === festaSelecionada);
+                  if (festa) setEditFestaNome(festa.nome);
+                }}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-opacity-75"
+              >
+                Editar Festa
+              </button>
+              <button
+                onClick={() => handleDeleteFesta(festaSelecionada)}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-opacity-75"
+              >
+                Excluir Festa
+              </button>
+            </div>
+          )}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {/* RODANDO UM MAP PARA MOSTRAR AS FESTAS */}
+        <div className="mt-6 grid grid-cols-3 gap-4">
+          {festas.map((festa) => (
+            <button
+              key={festa.id}
+              onClick={() => handleFestaClick(festa.id)}
+              className={`p-4 rounded-md shadow-md 
+                ${festaSelecionada === festa.id ? "bg-blue-500 text-white" : "bg-blue-500 text-white"}`} // Todos com a mesma cor
+            >
+              {festa.nome}
+            </button>
+          ))}
+        </div>
+
+        {/* Editando uma festa */}
+        {editFestaId && (
+          <div className="mt-4">
+            <input
+              type="text"
+              value={editFestaNome}
+              onChange={(e) => setEditFestaNome(e.target.value)}
+              placeholder="Editar nome da festa"
+              className="border p-2 rounded"
+            />
+            <button
+              onClick={handleEditFesta}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-opacity-75"
+            >
+              Salvar Edição
+            </button>
+          </div>
+        )}
+
+        {/* Exibindo detalhes da festa */}
+        <div className="mt-5">
+          {festaSelecionada && <Pessoa festaId={festaSelecionada} />}
+        </div>
+      </div>
     </div>
   );
-}
+};
+
+export default Home;
